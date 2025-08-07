@@ -25,9 +25,11 @@ export async function readConfig() {
  *
  * @param s {string}
  * @param flag {number}
+ * @param ip {string}
+ * @param port {string|number}
  * @returns {Promise<void>}
  */
-export async function startCG(s, flag) {
+export async function startCG(s, flag, ip, port) {
     let path = fs.realpathSync(s);
     const params = ['updated'];
 
@@ -72,7 +74,7 @@ export async function startCG(s, flag) {
     }
 
     files = null;
-    params.push('IP:0:127.0.0.1:9030')
+    params.push(`IP:0:${ip || '127.0.0.1'}:${port || 9030}`)
 
     console.log(params.join(' '));
     shell.launch(path, params.join(' '));

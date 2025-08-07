@@ -114,7 +114,7 @@ async function startGame() {
     if (!data || !data.exe) {
         return;
     }
-    await startCG(data.exe, check.value);
+    await startCG(data.exe, check.value, data.ip, data.port);
 }
 
 
@@ -146,7 +146,9 @@ async function findPid() {
             pids = null;
             startChecker();
         } else {
-            startEngine().finally(() => 0);
+            if (!data.ip || data.ip !== '127.0.0.1') {
+                startEngine().finally(() => 0);
+            }
         }
     } catch (e) {
         console.log(e);
