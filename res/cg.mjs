@@ -39,8 +39,8 @@ export async function startCG(s, flag, ip, port) {
     let dir = rPos >= 0 ? path.slice(0, rPos) : fs.realpathSync('file://./');
 
     console.log('files ' + dir + '\\bin');
-    let files = (await shell.readdir(dir + '\\bin')).filter(e => /\.bin$/.test(e.path));
-    console.log('files' + files.length);
+    let files = (await shell.readdir(dir + '\\bin')).filter(e => /\.bin$/i.test(e.path));
+    console.log('files count ' + files.length);
 
     for (const {path, name} of files) {
         for (const [i, k, ri, rk] of mapping) {
