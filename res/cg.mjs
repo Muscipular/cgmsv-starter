@@ -58,6 +58,13 @@ export async function startCG(s, flag, ip, port) {
         }
     }
 
+
+    await fs.open(dir + "/data/CG-Setup.ini", "w+").then(async (e) => {
+        await e.write(`[DISPLAY]\r\nScreenMode=${flag & 32 ? 'FULLSCREEN' : 'NORMAL'}\r\nActiveMode=0\r\nEffect=${['', 'GENERALEFF', 'SIMULATEEFF', 'ALPHAEFF', 'HARDEFF'][flag & 7]}\r\n`);
+        await e.close();
+    }).catch(e => {
+
+    });
     params.push('3Ddevice:' + (flag & 7));
     if (!(flag & 32)) {
         params.push('windowmode')
