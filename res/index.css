@@ -139,6 +139,14 @@ input[type='text'] {
     margin-right: 10px;
 }
 
+.step-block label.resolution-setting {
+    width: 120px;
+}
+
+.resolution-setting select {
+    width: 100%;
+}
+
 input[type=checkbox] {
     display: inline-block;
     margin-right: 5px;

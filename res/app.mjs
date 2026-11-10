@@ -1,7 +1,7 @@
 import {$, decode} from "@sciter"
 import {fs} from "@sys"
 import {alert} from "./common.mjs"
-import {readConfig, startCG} from "./cg.mjs";
+import {readConfig, resolutions, startCG} from "./cg.mjs";
 import * as shell from "@shell";
 
 const {signal} = Reactor;
@@ -23,7 +23,9 @@ const Title = () => {
 }
 
 const engineState = signal(false);
-const check = signal(0);
+const check = signal(4);
+const resolution = signal(resolutions[0]);
+const gameStarting = signal(false);
 let enginePid = 0;
 let engineChecker = 0;
 let hide = false;
@@ -45,9 +47,9 @@ const App = () => {
             {/*<input type="text" placeholder={"密码"}/>*/}
             <label><input type="checkbox" onChange={e => checkValue(8, e)} checked={check.value & 8} onCheck/>音乐</label>
             <label><input type="checkbox" onChange={e => checkValue(16, e)} checked={check.value & 16}/>音效</label>
-            <label><input type="checkbox" onChange={e => checkValue(32, e)} checked={check.value & 32}/>全屏</label>
-            <label><select as='integer' onChange={e => selectValue(e)}>{[4, 3, 2, 1].map(e => <option value={e + ''} selected={check.value & 7}>{e}档</option>)}</select></label>
-            <button onClick={() => startGame()}>开始游戏</button>
+            <label><select as='integer' onChange={e => selectValue(e)}>{[4, 3, 2, 1].map(e => <option value={e + ''} selected={(check.value & 7) === e}>{e}档</option>)}</select></label>
+            <label class={'resolution-setting'} title={"分辨率"}><select onChange={e => selectResolution(e)}>{resolutions.map(e => <option value={e} selected={resolution.value === e}>{e}</option>)}</select></label>
+            <button disabled={gameStarting.value} onClick={() => startGame()}>开始游戏</button>
         </div>
     </div>
 }
@@ -65,6 +67,12 @@ function selectValue(e) {
     check.value = v;
     check.send(v);
     // console.log([e.target.checked, e.target.value, v, check.value]);
+}
+
+function selectResolution(e) {
+    let v = e.target.value;
+    resolution.value = v;
+    resolution.send(v);
 }
 
 async function startEngine() {
@@ -110,11 +118,21 @@ function stopEngine() {
 }
 
 async function startGame() {
-    let data = await readConfig().catch(e => alert(e));
-    if (!data || !data.exe) {
-        return;
+    if (gameStarting.value) return;
+    gameStarting.value = true;
+    gameStarting.send(true);
+    try {
+        let data = await readConfig();
+        if (!data || !data.exe) {
+            throw new Error("启动失败：config.json 未配置客户端 exe");
+        }
+        await startCG(data.exe, check.value, data.ip, data.port, resolution.value);
+    } catch (e) {
+        alert(e);
+    } finally {
+        gameStarting.value = false;
+        gameStarting.send(false);
     }
-    await startCG(data.exe, check.value, data.ip, data.port);
 }
 
 

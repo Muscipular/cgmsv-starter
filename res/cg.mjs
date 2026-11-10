@@ -1,7 +1,9 @@
 import {decode} from "@sciter";
 import {fs, cwd} from "@sys";
-import {mapping} from "./mapping.mjs";
+import {refreshBinLoader} from "./binloader.mjs";
 import * as shell from "@shell";
+
+export const resolutions = ["640*480", "720*540", "800*600", "1024*768"];
 
 /**
  * @returns {Promise<Data>}
@@ -14,7 +16,7 @@ export async function readConfig() {
         throw new Error("启动失败:配置文件不存在 " + cwd() + '\\config.json');
     }
     try {
-        data = JSON.parse(decode(data));
+        data = JSON.parse(decode(data, "utf-8"));
     } catch (e) {
         throw new Error("启动失败:配置文件错误");
     }
@@ -27,60 +29,24 @@ export async function readConfig() {
  * @param flag {number}
  * @param ip {string}
  * @param port {string|number}
+ * @param resolution {string}
  * @returns {Promise<void>}
  */
-export async function startCG(s, flag, ip, port) {
+export async function startCG(s, flag, ip, port, resolution = resolutions[0]) {
+    if (!resolutions.includes(resolution)) {
+        throw new Error("启动失败：不支持的分辨率 " + resolution);
+    }
+    const [width, height] = resolution.split("*");
     let path = fs.realpathSync(s);
-    const params = ['updated'];
-
-    let rPos = path.lastIndexOf('\\');
-    console.log(path, rPos);
-
-    let dir = rPos >= 0 ? path.slice(0, rPos) : fs.realpathSync('file://./');
-
-    console.log('files ' + dir + '\\bin');
-    let files = (await shell.readdir(dir + '\\bin')).filter(e => /\.bin$/i.test(e.path));
-    console.log('files count ' + files.length);
-
-    for (const {path, name} of files) {
-        for (const [i, k, ri, rk] of mapping) {
-            let mi = ri.exec(path);
-            if (mi) {
-                params.push(i + mi[1]);
-                break;
-            } else {
-                let mk = rk.exec(path);
-                if (mk) {
-                    params.push(k + mk[1]);
-                    break;
-                }
-            }
-        }
-    }
-
-
-    await fs.open(dir + "/data/CG-Setup.ini", "w+").then(async (e) => {
-        await e.write(`[DISPLAY]\r\nScreenMode=${flag & 32 ? 'FULLSCREEN' : 'NORMAL'}\r\nActiveMode=0\r\nEffect=${['', 'GENERALEFF', 'SIMULATEEFF', 'ALPHAEFF', 'HARDEFF'][flag & 7]}\r\n`);
-        await e.close();
-    }).catch(e => {
-
-    });
-    params.push('3Ddevice:' + (flag & 7));
-    if (!(flag & 32)) {
-        params.push('windowmode')
-    }
+    const params = ['3Ddevice:' + (flag & 7), `/width:${width}`, `/height:${height}`];
+    await refreshBinLoader(path);
     if (!(flag & 8)) {
         params.push('musicoff')
-    } else {
-        params.push('musicon')
     }
     if (!(flag & 16)) {
         params.push('soundoff')
-    } else {
-        params.push('soundon')
     }
 
-    files = null;
     params.push(`IP:0:${ip || '127.0.0.1'}:${port || 9030}`)
 
     console.log(params.join(' '));
